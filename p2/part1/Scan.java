@@ -14,11 +14,11 @@ public class Scan {
     public Scan() {     // the constructor -- here initializes variables...
         // initially, we pretend that we just read a newline.
         // hence linenumber is initialized to 0.
-	isr = new InputStreamReader(System.in);
+        isr = new InputStreamReader(System.in);
         c = '\n';
         linenumber = 0;
         putback = true;
-	got_eof = false;
+        got_eof = false;
     }
 
     // internal state of scanner
@@ -37,94 +37,95 @@ public class Scan {
     // acts as a generator (iterator) over input.
     // returns Token
     public Token scan() {
-	if( got_eof ) {
-	    System.err.println("scan: oops -- called after eof.");
+        if( got_eof ) {
+            System.err.println("scan: oops -- called after eof.");
 	    return new Token(TK.ERROR, "called after eof", linenumber);
 	}
 
-	while(true) {
+	while(true)
+    {
 	    if( putback) {
-		putback = false;
+            putback = false;
 	    }
 	    else {
-		c = getchar();
+            c = getchar();
 	    }
 	    if ( myisalpha((char) c) ) {
-		/* identifier. */
-		return new Token(TK.ID, buildID(), linenumber);
+            /* identifier. */
+            return new Token(TK.ID, buildID(), linenumber);
 	    }
 	    else if ( myisdigit((char) c) ) {
-		/* number. */
-		return new Token(TK.NUM, buildNUM(), linenumber);
+            /* number. */
+            return new Token(TK.NUM, buildNUM(), linenumber);
 	    }
 	    else {
-		switch( c ) {
-		    case '@':
-			return ccase1('@',TK.DECLARE);
-		    case '!':
-			return ccase1('!',TK.PRINT);
-		    case ',':
-			return ccase1(',',TK.COMMA);
-		    case '(':
-			return ccase1('(',TK.LPAREN);
-		    case ')':
-			return ccase1(')',TK.RPAREN);
-		    case '+':
-			return ccase1('+',TK.PLUS);
-		    case '-':
-			return ccase1('-',TK.MINUS);
-		    case '*':
-			return ccase1('*',TK.TIMES);
-		    case '/':
-			return ccase1('/',TK.DIVIDE);
-		    case '[':
-			return ccase1('[',TK.IF);
-		    case ':':
-			return ccase1(':',TK.THEN);
-		    case '|':
-			return ccase1('|',TK.ELSEIF);
-		    case '%':
-			return ccase1('%',TK.ELSE);
-		    case ']':
-			return ccase1(']',TK.ENDIF);
-		    case '<':
-			return ccase1('<',TK.DO);
-            case '~':
-                return ccase1('~',TK.TILDE);
-            case '=':
-                return ccase1('=',TK.ASSIGN);
-            case '>':
-                return ccase1('>', TK.ENDDO);
-                
-		    case EOF:
-			got_eof = true;
-			return new Token(TK.EOF,
-					 new String("*EOF*"),
-					 linenumber);
-		    case '\n':
-			linenumber++;
-			break;
-		    case ' ':
-		    case '\t':
-		    case '\r': // for Windows (lines end in \r\n)
-			break; // whitespace is easy to ignore
-		    case '#': // gobble comments
-			do {
-			    c = getchar();
-			} while( c != '\n' && c != EOF );
-			putback = true;
-			break;
-		    default:
-			System.err.println(
-					   "scan: line "+linenumber+
-					   " bad char (ASCII " + c
-					   + ")");
-			break;
-		}
+            switch( c )
+            {
+                case '@':
+                    return ccase1('@',TK.DECLARE);
+                case '!':
+                    return ccase1('!',TK.PRINT);
+                case ',':
+                    return ccase1(',',TK.COMMA);
+                case '(':
+                    return ccase1('(',TK.LPAREN);
+                case ')':
+                    return ccase1(')',TK.RPAREN);
+                case '+':
+                    return ccase1('+',TK.PLUS);
+                case '-':
+                    return ccase1('-',TK.MINUS);
+                case '*':
+                    return ccase1('*',TK.TIMES);
+                case '/':
+                    return ccase1('/',TK.DIVIDE);
+                case '[':
+                    return ccase1('[',TK.IF);
+                case ':':
+                    return ccase1(':',TK.THEN);
+                case '|':
+                    return ccase1('|',TK.ELSEIF);
+                case '%':
+                    return ccase1('%',TK.ELSE);
+                case ']':
+                    return ccase1(']',TK.ENDIF);
+                case '<':
+                    return ccase1('<',TK.DO);
+                case '~':
+                    return ccase1('~',TK.TILDE);
+                case '=':
+                    return ccase1('=',TK.ASSIGN);
+                case '>':
+                    return ccase1('>', TK.ENDDO);
+                    
+                case EOF:
+                    got_eof = true;
+                    return new Token(TK.EOF,
+                         new String("*EOF*"),
+                         linenumber);
+                case '\n':
+                    linenumber++;
+                    break;
+                case ' ':
+                case '\t':
+                case '\r': // for Windows (lines end in \r\n)
+                    break; // whitespace is easy to ignore
+                case '#': // gobble comments
+                    do {
+                        c = getchar();
+                    } while( c != '\n' && c != EOF );
+                    putback = true;
+                    break;
+                default:
+                    System.err.println(
+                           "scan: line "+linenumber+
+                           " bad char (ASCII " + c
+                           + ")");
+                    break;
+            }
 	    }
 	}
-    }
-
+}
 
     private int getchar() {
 	int c = EOF;
@@ -217,13 +218,13 @@ public class Scan {
     // E's idea of what can form an identifier
     // (could instead directly call Character.isLetter)
     private static boolean myisalpha(char c) {
-	return Character.isLetter(c);
+        return Character.isLetter(c);
     }
 
     // E's idea of what can form a number
     // (could instead directly call Character.isDigit)
     private static boolean myisdigit(char c) {
-	return Character.isDigit(c);
+        return Character.isDigit(c);
     }
 
 }
