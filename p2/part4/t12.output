@@ -1,0 +1,9 @@
+running e2c
+compiling the C generated code
+t12.c:4:2: error: expected expression
+ = 25
+ ^
+t12.c:5:2: error: expression is not assignable
+ = 12
+ ^
+2 errors generated.
