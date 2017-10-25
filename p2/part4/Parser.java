@@ -4,8 +4,17 @@ import java.util.*;
 public class Parser {
     
     private Stack<ArrayList<String> > scope = new Stack<ArrayList<String> > ();
-    //private Stack<Set<String> > scope = new Stack<Set<String> > ();
+    private ArrayList<String> evaluation_list = new ArrayList<String> ();
+    private Stack<ArrayList<String> > output_scope = new Stack<ArrayList<String> > ();
+
     private int block_ctr = 0;
+    private Boolean isPrint = false;
+    private Boolean isIF = false;
+    private Boolean isAssign = false;
+    private Boolean isDO = false;
+    private Boolean checkGlobal = false;
+    private Boolean checkBlock = false;
+    private int checkBlockNum = 0;
     
     // tok is global to all these parsing methods;
     // scan just calls the scanner's scan method and saves the result in tok.
@@ -25,131 +34,6 @@ public class Parser {
             parse_error("junk after logical end of program");
     }
 
-    private void program()
-    {
-        ///////////////////////////////////////////////////////
-        System.out.println("#include \"stdio.h\"");
-        System.out.println("int main()");
-        System.out.println("{");
-        ///////////////////////////////////////////////////////
-
-        block();
-        
-        ///////////////////////////////////////////////////////
-        System.out.println("return 0;");
-        System.out.println("}");
-        ////////////////////////////////////////////////////////
-    }
-
-    private void block()
-    {
-        ArrayList<String> block = new ArrayList<String>();
-        scope.push(block);
-        block_ctr++;
-        
-        declaration_list();
-        statement_list();
-        
-        scope.pop();
-        block_ctr--;
-    }
-
-    private void declaration_list()
-    {
-        while( is(TK.DECLARE) )
-        {
-            declaration();
-        }
-    }
-    
-    private void statement_list()
-    {
-        while(is(TK.TILDE) || is(TK.ID) || is(TK.PRINT) || is(TK.DO) || is(TK.IF))
-        {
-            statement();
-        }
-    }
-
-    private void declaration()
-    {
-        ArrayList<String> input_var = scope.pop();
-        //Set<String> input_var = scope.pop();
-        
-        mustbe(TK.DECLARE);
-        
-        if (is(TK.ID))
-        {
-            ////////////
-            if (input_var.contains(tok.string))
-                print_redeclaration_var();
-            ////////////
-            input_var.add(tok.string);
-            mustbe(TK.ID);
-        }
-        while( is(TK.COMMA) )
-        {
-            scan();
-            if (is(TK.ID))
-            {
-                if (input_var.contains(tok.string))
-                    print_redeclaration_var();
-                
-                input_var.add(tok.string);
-                mustbe(TK.ID);
-            }
-        }
-
-        scope.push(input_var);
-    }
-
-    private void statement()
-    {
-        if(is(TK.TILDE) || is(TK.ID))
-        {
-            assignment();
-        }
-        else if(is(TK.PRINT))
-        {
-            print();
-        }
-        else if(is(TK.DO))
-        {
-            DO();
-        }
-        else if(is(TK.IF))
-        {
-            IF();
-        }
-    }
-    
-    private void print()
-    {
-        mustbe(TK.PRINT);
-
-        ///////////////////////////////////////////////////////
-        System.out.print("printf(\"");
-        ///////////////////////////////////////////////////////
-
-        expr();
-
-        ///////////////////////////////////////////////////////
-        System.out.println("\\n\");");
-        ///////////////////////////////////////////////////////
-    }
-    
-    private void assignment()
-    {
-        ref_id();
-        mustbe(TK.ASSIGN);
-
-        ///////////////////////////////////////////////////////
-        System.out.print(" = ");
-
-        expr();
-
-        System.out.println("");
-    }
-    
     private Boolean stack_search()
     {
         Stack<ArrayList<String> > temp_stack = new Stack<ArrayList<String> > ();
@@ -165,9 +49,7 @@ public class Parser {
             {
                 if(temp_array.get(i).equals(tok.string))
                     isfound = true;
-            }
-            
-            
+            }      
             
             temp_stack.push(temp_array);
         }
@@ -205,10 +87,8 @@ public class Parser {
                 if (temp_array.get(i).equals(tok.string))
                     isfound = true;
             }
-            
             scope.push(temp_array);
         }
-        
         
         // put everything back in scope stack
         //for (int i = 0; i < block_number - 1; i++)
@@ -246,8 +126,7 @@ public class Parser {
             
             scope.push(temp_array);
         }
-        
-        
+                
         // put everything back in scope stack
         for (int i = 0; i < block_ctr - 1; i++)
         {
@@ -256,6 +135,232 @@ public class Parser {
         }
         
         return isfound;
+    }
+
+    private int found_in_block()
+    {
+        ArrayList<String> list_temp = new ArrayList<String>();
+        Stack<ArrayList<String>> stack_temp = new Stack<ArrayList<String>>();
+        Boolean isfound = false; 
+        String temp_str = new String();
+        int temp_ctr = block_ctr;
+
+        while (!output_scope.empty())
+        {
+            temp_str = "x_" + tok.string + temp_ctr;
+
+            list_temp = output_scope.pop();
+            
+            for (int i = 0; i < list_temp.size(); i++)
+            {
+                if (list_temp.get(i).equals(temp_str))
+                {
+                    if (checkGlobal)
+                        if (temp_ctr == 1)
+                            isfound = true;
+
+                    if (checkBlock)
+                        if (temp_ctr == (block_ctr - checkBlockNum))
+                            isfound = true;
+
+                    if (!checkGlobal && !checkBlock)
+                        isfound = true;
+                }
+            }
+
+            stack_temp.push(list_temp);
+
+            if(isfound)
+                break;
+
+            temp_ctr--;
+        }
+
+        while(!stack_temp.empty())
+        {
+            list_temp = stack_temp.pop();
+            output_scope.push(list_temp);
+        }
+
+        if (isfound)
+            return temp_ctr;
+
+        return 1;
+    }
+
+    private void program()
+    {
+        System.out.println("#include \"stdio.h\"");
+        System.out.println("int main()");
+        System.out.println("{");
+
+        block();
+        
+        System.out.println("return 0;");
+        System.out.println("}");
+    }
+
+    private void block()
+    {
+        ArrayList<String> block = new ArrayList<String>();
+        scope.push(block);
+        block_ctr++;
+
+        ArrayList<String> output_block = new ArrayList<String>();
+        output_scope.push(output_block);
+        
+        declaration_list();
+        statement_list();
+        
+        scope.pop();
+        output_scope.pop();
+        block_ctr--;
+    }
+
+    private void declaration_list()
+    {
+        while( is(TK.DECLARE) )
+        {
+            declaration();
+        }
+    }
+    
+    private void statement_list()
+    {
+        while(is(TK.TILDE) || is(TK.ID) || is(TK.PRINT) || is(TK.DO) || is(TK.IF))
+        {
+            statement();
+        }
+    }
+
+    private void declaration()
+    {
+        String temp_str = new String();
+        Boolean isRedeclared = false;
+        ArrayList<String> input_var = scope.pop();
+        ArrayList<String> output_var = output_scope.pop();
+        
+        mustbe(TK.DECLARE);
+        
+        if (is(TK.ID))
+        {            
+            if (input_var.contains(tok.string))
+            {
+                print_redeclaration_var();
+                isRedeclared = true;
+            }
+
+            if (!input_var.contains(tok.string))
+            {
+                isRedeclared = false;
+                //System.out.print("int x_" + tok.string);
+                System.out.print("int x_" + tok.string + block_ctr);
+            }
+
+            temp_str = "x_" + tok.string + block_ctr;
+            output_var.add(temp_str);
+            input_var.add(tok.string);
+            mustbe(TK.ID);
+        }
+
+        while( is(TK.COMMA) )
+        {
+            scan();
+            if (is(TK.ID))
+            {
+
+                if (input_var.contains(tok.string))
+                {
+                    print_redeclaration_var();
+                    input_var.add(tok.string);
+
+                    mustbe(TK.ID);
+                    continue;
+                }
+                
+                if (!isRedeclared)
+                    System.out.print(", x_" + tok.string + block_ctr);
+
+                if (isRedeclared)
+                {
+                    System.out.print("int x_" + tok.string + block_ctr);
+                    isRedeclared = false;
+                }
+
+                temp_str = "x_" + tok.string + block_ctr;
+                output_var.add(temp_str);
+                input_var.add(tok.string);
+                mustbe(TK.ID);
+            }
+        }
+
+        System.out.println(";");
+
+        output_scope.push(output_var);
+        scope.push(input_var);
+    }
+
+    private void statement()
+    {
+        if(is(TK.TILDE) || is(TK.ID))
+        {
+            assignment();
+        }
+        else if(is(TK.PRINT))
+        {
+            print();
+        }
+        else if(is(TK.DO))
+        {
+            DO();
+        }
+        else if(is(TK.IF))
+        {
+            IF();
+        }
+    }
+    
+    private void print()
+    {
+        isPrint = true;
+
+        mustbe(TK.PRINT);
+
+        System.out.print("printf(\"");
+
+        expr();
+
+        if(evaluation_list.size() != 0)
+        {
+            System.out.print("%d\\n\", ");
+
+            for (int i = 0; i < evaluation_list.size(); i++)
+            {
+                System.out.print(evaluation_list.get(i));
+            }
+
+            System.out.println(");");
+        }
+        else
+        {
+            System.out.println("\\n\");");
+        }
+
+        evaluation_list.clear();
+        isPrint = false;
+    }
+    
+    private void assignment()
+    {
+        isAssign = true;
+
+        ref_id();
+        mustbe(TK.ASSIGN);
+        System.out.print(" = ");
+
+        expr();
+        System.out.println(";");
+        isAssign = false;
     }
     
     private void ref_id()
@@ -296,6 +401,8 @@ public class Parser {
         {
             if (is_in_global() == false)
                 print_not_in_scope(hasNum, block_ctr);
+
+            checkGlobal = true;
         }
         
         // check for at specific block
@@ -303,29 +410,51 @@ public class Parser {
         {
             if (is_in_block(blockNum) == false)
                 print_not_in_scope(hasNum, blockNum);
+
+            checkBlock = true;
+            checkBlockNum = blockNum;
         }
-        
+
+        if (isIF && isPrint == false && isDO == false)
+            System.out.print("x_" + tok.string + found_in_block());
+
+        if(isAssign && isPrint == false && isDO == false && isIF == false)
+            System.out.print("x_" + tok.string + found_in_block());
+
+        if(isDO && isPrint == false)
+            System.out.print("x_" + tok.string + found_in_block());
+
+        if(isPrint)
+            evaluation_list.add("x_" + tok.string + found_in_block());
+                
+        checkBlock = false;
+        checkGlobal = false;
         mustbe(TK.ID);
     }
     
     private void DO()
     {
+        isDO = true;
+
+        System.out.print("while(");
+
         mustbe(TK.DO);
         guarded_command();
         mustbe(TK.ENDDO);
+
+        System.out.println("}");
+        isDO = false;
     }
     
     private void IF()
     {
-        ///////////////////////////////////////
+        isIF = true;
+
         System.out.print("if(");
-        ///////////////////////////////////////
         mustbe(TK.IF);
         guarded_command();
 
         System.out.println("}");
-
-        //guarded_command();
 
         while(is(TK.ELSEIF))
         {
@@ -333,30 +462,29 @@ public class Parser {
 
             scan();
             guarded_command();
-
             System.out.println("}");
-
         }
         
         if(is(TK.ELSE))
         {
-            System.out.println("else {");
-
+            System.out.println("else{");
             scan();
             block();
-
             System.out.println("}");
+
         }
         mustbe(TK.ENDIF);
 
-        //System.out.println("}");
+        isIF = false;
     }
 
     private void guarded_command()
     {
         expr();
-        System.out.println(" <= 0)");
-        System.out.println("{");
+
+        if(isIF && isDO == false)
+            System.out.println(" <= 0){");
+
         mustbe(TK.THEN);
         block();
     }
@@ -369,6 +497,9 @@ public class Parser {
             addop();
             term();
         }
+
+        if(isDO && isPrint == false && isAssign == false)
+            System.out.println(" <= 0){");
     }
     
     private void term()
@@ -385,9 +516,15 @@ public class Parser {
     {
         if(is(TK.LPAREN))
         {
+            if (isPrint)
+                evaluation_list.add("(");
+
             scan();
             expr();
             mustbe(TK.RPAREN);
+
+            if (isPrint)
+                evaluation_list.add(")");
         }
         else if(is(TK.TILDE) || is(TK.ID))
         {
@@ -395,9 +532,14 @@ public class Parser {
         }
         else if(is(TK.NUM))
         {
-            ///////////////////////////////////////////////////////
-            System.out.print(tok.string);
-            ///////////////////////////////////////////////////////
+            if (isPrint)
+                evaluation_list.add(tok.string);
+
+            if (isIF && (isAssign == false) && (isPrint == false) && (isDO == false))
+                System.out.print(tok.string);
+            
+            if (isAssign || isDO)
+                System.out.print(tok.string);
 
             mustbe(TK.NUM);
         }
@@ -406,19 +548,51 @@ public class Parser {
     private void addop()
     {
         if(is(TK.PLUS))
+        {
+            if (isPrint)
+                evaluation_list.add(" + ");
+
+            if ((isAssign || isDO || isIF) && isPrint == false)
+                System.out.print(" + ");
+
             mustbe(TK.PLUS);
+        }
         
         if(is(TK.MINUS))
+        {
+            if (isPrint)
+                evaluation_list.add(" - ");
+
+            if ((isAssign || isDO || isIF) && isPrint == false)
+                System.out.print(" - ");
+
             mustbe(TK.MINUS);
+        }
     }
     
     private void multop()
     {
         if(is(TK.TIMES))
+        {
+            if (isPrint)
+                evaluation_list.add(" * ");
+
+            if ((isAssign || isDO || isIF) && isPrint == false)
+                System.out.print(" * ");
+
             mustbe(TK.TIMES);
+        }
         
         if(is(TK.DIVIDE))
+        {
+            if (isPrint)
+                evaluation_list.add(" / ");
+
+            if ((isAssign || isDO || isIF) && isPrint == false)
+                System.out.print(" / ");
+
             mustbe(TK.DIVIDE);
+        }
     }
     
     // is current token what we want?
