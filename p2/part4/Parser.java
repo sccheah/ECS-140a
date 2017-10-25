@@ -3,16 +3,24 @@ import java.util.*;
 
 public class Parser {
     
+    // vars to deal with scoping
     private Stack<ArrayList<String> > scope = new Stack<ArrayList<String> > ();
-    private ArrayList<String> evaluation_list = new ArrayList<String> ();
     private Stack<ArrayList<String> > output_scope = new Stack<ArrayList<String> > ();
 
+    // list to hold for printing to C file
+    private ArrayList<String> evaluation_list = new ArrayList<String> ();
+
+    // keeps track of the block we are on
     private int block_ctr = 0;
+
+    // vars to keep track of where we are in the parsing
     private Boolean isPrint = false;
     private Boolean isIF = false;
     private Boolean isAssign = false;
     private Boolean isDO = false;
     private Boolean checkGlobal = false;
+
+    // vars to see if we have to go to a specific block. e.g. !~2a
     private Boolean checkBlock = false;
     private int checkBlockNum = 0;
     
@@ -34,6 +42,7 @@ public class Parser {
             parse_error("junk after logical end of program");
     }
 
+    // searches for undeclared variables
     private Boolean stack_search()
     {
         Stack<ArrayList<String> > temp_stack = new Stack<ArrayList<String> > ();
@@ -64,6 +73,7 @@ public class Parser {
         return isfound;
     }
     
+    // checks to see if an id is in a specific block
     private Boolean is_in_block(int block_number)
     {
         Stack<ArrayList<String> > temp_stack = new Stack<ArrayList<String> > ();
@@ -71,7 +81,6 @@ public class Parser {
         Boolean isfound = false;
         
         // move to the block we want
-        //for (int i = 0; i < block_number - 1; i++)
         for (int i = 0; i < block_number; i++)
         {
             temp_array = scope.pop();
@@ -91,7 +100,6 @@ public class Parser {
         }
         
         // put everything back in scope stack
-        //for (int i = 0; i < block_number - 1; i++)
         for (int i = 0; i < block_number; i++)
         {
             temp_array = temp_stack.pop();
@@ -101,6 +109,7 @@ public class Parser {
         return isfound;
     }
     
+    // checks to see if an id exists at global scope
     private Boolean is_in_global()
     {
         Stack<ArrayList<String> > temp_stack = new Stack<ArrayList<String> > ();
@@ -137,6 +146,7 @@ public class Parser {
         return isfound;
     }
 
+    // used for printing to C file. Outputs the block number which an id was found do deal with scoping and naming conventions
     private int found_in_block()
     {
         ArrayList<String> list_temp = new ArrayList<String>();
@@ -188,6 +198,7 @@ public class Parser {
         return 1;
     }
 
+    // beginning of a program. Outputs headers and C program outline
     private void program()
     {
         System.out.println("#include \"stdio.h\"");
@@ -200,12 +211,15 @@ public class Parser {
         System.out.println("}");
     }
 
+    // non-terminal block
     private void block()
     {
+        // add a block to the scoping stack for parsing stack
         ArrayList<String> block = new ArrayList<String>();
         scope.push(block);
         block_ctr++;
 
+        // add a block to scoping stack for output to C file 
         ArrayList<String> output_block = new ArrayList<String>();
         output_scope.push(output_block);
         
@@ -217,6 +231,7 @@ public class Parser {
         block_ctr--;
     }
 
+    // non-terminal declaration_list
     private void declaration_list()
     {
         while( is(TK.DECLARE) )
@@ -225,6 +240,7 @@ public class Parser {
         }
     }
     
+    // non-terminal statement_list
     private void statement_list()
     {
         while(is(TK.TILDE) || is(TK.ID) || is(TK.PRINT) || is(TK.DO) || is(TK.IF))
@@ -233,8 +249,10 @@ public class Parser {
         }
     }
 
+    // non-terminal declaration
     private void declaration()
     {
+        // pop block off scope stack to put ID into list
         String temp_str = new String();
         Boolean isRedeclared = false;
         ArrayList<String> input_var = scope.pop();
@@ -243,21 +261,23 @@ public class Parser {
         mustbe(TK.DECLARE);
         
         if (is(TK.ID))
-        {            
+        {
+            // checks for redeclaration
             if (input_var.contains(tok.string))
             {
                 print_redeclaration_var();
                 isRedeclared = true;
             }
 
+            // if var is not redeclared
             if (!input_var.contains(tok.string))
             {
-                isRedeclared = false;
-                //System.out.print("int x_" + tok.string);
                 System.out.print("int x_" + tok.string + block_ctr);
             }
 
             temp_str = "x_" + tok.string + block_ctr;
+
+            // add IDs to list
             output_var.add(temp_str);
             input_var.add(tok.string);
             mustbe(TK.ID);
@@ -268,7 +288,7 @@ public class Parser {
             scan();
             if (is(TK.ID))
             {
-
+                // if there is a redeclaration
                 if (input_var.contains(tok.string))
                 {
                     print_redeclaration_var();
@@ -278,9 +298,11 @@ public class Parser {
                     continue;
                 }
                 
+                // if there is no redeclaration
                 if (!isRedeclared)
                     System.out.print(", x_" + tok.string + block_ctr);
 
+                // if there was a redeclaration, include "int" before ID
                 if (isRedeclared)
                 {
                     System.out.print("int x_" + tok.string + block_ctr);
@@ -296,10 +318,12 @@ public class Parser {
 
         System.out.println(";");
 
+        // put list back in stack
         output_scope.push(output_var);
         scope.push(input_var);
     }
 
+    // non-terminal statement
     private void statement()
     {
         if(is(TK.TILDE) || is(TK.ID))
@@ -320,6 +344,7 @@ public class Parser {
         }
     }
     
+    // non-terminal print
     private void print()
     {
         isPrint = true;
@@ -330,10 +355,12 @@ public class Parser {
 
         expr();
 
+        // if there is an expression to print
         if(evaluation_list.size() != 0)
         {
             System.out.print("%d\\n\", ");
 
+            // grab each element of the list to print out
             for (int i = 0; i < evaluation_list.size(); i++)
             {
                 System.out.print(evaluation_list.get(i));
@@ -346,10 +373,12 @@ public class Parser {
             System.out.println("\\n\");");
         }
 
+        // clear evaluation_list for next print statement
         evaluation_list.clear();
         isPrint = false;
     }
     
+    // non-terminal assignment
     private void assignment()
     {
         isAssign = true;
@@ -363,6 +392,7 @@ public class Parser {
         isAssign = false;
     }
     
+    // non-terminal ref_id
     private void ref_id()
     {
         Boolean hasTilde = false;
@@ -415,6 +445,7 @@ public class Parser {
             checkBlockNum = blockNum;
         }
 
+        // deals with printing for specific cases
         if (isIF && isPrint == false && isDO == false)
             System.out.print("x_" + tok.string + found_in_block());
 
@@ -432,6 +463,7 @@ public class Parser {
         mustbe(TK.ID);
     }
     
+    // non-terminal DO
     private void DO()
     {
         isDO = true;
@@ -446,6 +478,7 @@ public class Parser {
         isDO = false;
     }
     
+    // non-terminal IF
     private void IF()
     {
         isIF = true;
@@ -478,6 +511,7 @@ public class Parser {
         isIF = false;
     }
 
+    // non-terminal guarded_command
     private void guarded_command()
     {
         expr();
@@ -489,6 +523,7 @@ public class Parser {
         block();
     }
     
+    // non-terminal expr
     private void expr()
     {
         term();
@@ -502,6 +537,7 @@ public class Parser {
             System.out.println(" <= 0){");
     }
     
+    // non-terminal term
     private void term()
     {
         factor();
@@ -512,6 +548,7 @@ public class Parser {
         }
     }
     
+    // non-terminal factor
     private void factor()
     {
         if(is(TK.LPAREN))
@@ -545,6 +582,7 @@ public class Parser {
         }
     }
     
+    // non-terminal addop
     private void addop()
     {
         if(is(TK.PLUS))
@@ -570,6 +608,7 @@ public class Parser {
         }
     }
     
+    // non-terminal multop
     private void multop()
     {
         if(is(TK.TIMES))
