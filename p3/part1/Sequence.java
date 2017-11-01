@@ -1,5 +1,6 @@
 public class Sequence extends Element
 {
-    Sequence content;
-    public Sequence() { content = null; }
+    Element content;
+    Sequence next;
+    public Sequence() { content = null; next = null; }
 }
