@@ -138,114 +138,119 @@ public class Sequence extends Element
         
         return node.content;
     }
-    
-    
-    // need to use recursion for flatten() and copy(). Find out deep copy.
-    
+
     public Sequence flatten()
     {
-        Sequence head = this;
+        Sequence new_sequence = new Sequence();
         Sequence node = this;
-        Sequence pev_node = this;
-        
-        // check to see if index 0 is a nested Sequence
-        if (node.content instanceof Sequence)
-        {
-            if (node.content != null)
-            {
-                // want head to point to first element in nested sequence
-                head = node.content;
-                Sequence nested_iterator = node.content;
-            }
-            
-            while (nested_iterator.next != null)
-            {
-                nested_iterator = nested_iterator.next;
-            }
-            
-            nested_iterator.next = node.next;
-            prev_node = nested_iterator;
-            node = nested_iterator;
-        }
         
         while (node.next != null)
         {
-            prev_node = node;
-            node = node.next;
+            Sequence nested_sequence = new Sequence();
             
             if (node.content instanceof Sequence)
             {
-                prev_node.next = node.content;
+                nested_sequence = ((Sequence)node.content).flatten();
                 
-                if (node.content != null)
-                    Sequence nested_iterator = node.content;
-             
-                while (nested_iterator.next != null)
+                while (nested_sequence.next != null)
                 {
-                    nested_iterator = nested_iterator.next;
+                    new_sequence.add(nested_sequence.content, new_sequence.length());
+                    nested_sequence = nested_sequence.next;
                 }
-                
-                nested_iterator.next = node.next;
-                node = nested_iterator;
             }
+            else
+            {
+                new_sequence.add(node.content, new_sequence.length());
+            }
+            
+            node = node.next;
         }
+        
+        return new_sequence;
     }
     
     public Sequence copy()
     {
-        Sequence new_sequence = new Sequence();
-        Sequence head = this;
-        Sequence node = this;
-        Sequence pev_node = this;
-        int counter = 0;
         
-        // check to see if index 0 is a nested Sequence
-        if (node.content instanceof Sequence)
-        {
-            if (node.content != null)
-            {
-                // want head to point to first element in nested sequence
-                head = node.content;
-                Sequence nested_iterator = node.content;
-            }
-            
-            while (nested_iterator.next != null)
-            {
-                nested_iterator = nested_iterator.next;
-            }
-            
-            nested_iterator.next = node.next;
-            prev_node = nested_iterator;
-            node = nested_iterator;
-        }
-        
-        while (node.next != null)
-        {
-            prev_node = node;
-            node = node.next;
-            
-            if (node.content instanceof Sequence)
-            {
-                prev_node.next = node.content;
-                
-                if (node.content != null)
-                    Sequence nested_iterator = node.content;
-                
-                while (nested_iterator.next != null)
-                {
-                    nested_iterator = nested_iterator.next;
-                }
-                
-                nested_iterator.next = node.next;
-                node = nested_iterator;
-            }
-        }
     }
 }
 
 
 
-
+/*
+ public Sequence flatten()
+ {
+ Sequence head = this;
+ Sequence node = this;
+ Sequence prev_node = this;
+ int counter = 0;
+ 
+ while (head.contains_sequence())
+ {
+ node = head;
+ prev_node = head;
+ 
+ // check to see if index 0 is a nested Sequence
+ if (node.content instanceof Sequence)
+ {
+ Sequence nested_iterator = new Sequence();
+ 
+ if (node.content != null)
+ {
+ // want head to point to first element in nested sequence
+ head = (Sequence)node.content;
+ nested_iterator = (Sequence)node.content;
+ }
+ 
+ while (nested_iterator.next != null)
+ {
+ nested_iterator = nested_iterator.next;
+ }
+ 
+ nested_iterator.next = node.next;
+ prev_node = nested_iterator;
+ node = nested_iterator;
+ }
+ 
+ while (node.next != null)
+ {
+ prev_node = node;
+ node = node.next;
+ 
+ if (node.content instanceof Sequence)
+ {
+ Sequence nested_iterator = new Sequence();
+ prev_node.next = (Sequence)node.content;
+ 
+ if (node.content != null)
+ nested_iterator = (Sequence)node.content;
+ 
+ while (nested_iterator.next != null)
+ {
+ nested_iterator = nested_iterator.next;
+ }
+ 
+ nested_iterator.next = node.next;
+ node = nested_iterator;
+ }
+ }
+ }
+ 
+ // copy it over to a new Sequence object
+ Sequence new_sequence = new Sequence();
+ node = head;
+ while (node.next != null)
+ {
+ 
+ new_sequence.add(node.content, counter);
+ counter++;
+ 
+ node = node.next;
+ }
+ 
+ return new_sequence;
+ }
+ */
 
 
 
