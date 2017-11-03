@@ -171,86 +171,47 @@ public class Sequence extends Element
     
     public Sequence copy()
     {
+        Sequence copy = new Sequence();
+        Sequence node = this;
         
+        while (node.next != null)
+        {
+            if (node.content instanceof MyChar)
+            {
+                MyChar temp_char = new MyChar();
+                temp_char.Set(((MyChar)node.content).Get());
+                copy.add(temp_char, copy.length());
+            }
+            
+            if (node.content instanceof MyInteger)
+            {
+                MyInteger temp_int = new MyInteger();
+                temp_int.Set(((MyInteger)node.content).Get());
+                copy.add(temp_int, copy.length());
+            }
+            
+            if (node.content instanceof Sequence)
+            {
+                Sequence temp_seqence = new Sequence();
+                temp_seqence = (Sequence)node.content;
+                copy.add(temp_seqence, copy.length());
+            }
+            
+            node = node.next;
+        }
+        
+        return copy;
     }
 }
 
 
 
-/*
- public Sequence flatten()
- {
- Sequence head = this;
- Sequence node = this;
- Sequence prev_node = this;
- int counter = 0;
- 
- while (head.contains_sequence())
- {
- node = head;
- prev_node = head;
- 
- // check to see if index 0 is a nested Sequence
- if (node.content instanceof Sequence)
- {
- Sequence nested_iterator = new Sequence();
- 
- if (node.content != null)
- {
- // want head to point to first element in nested sequence
- head = (Sequence)node.content;
- nested_iterator = (Sequence)node.content;
- }
- 
- while (nested_iterator.next != null)
- {
- nested_iterator = nested_iterator.next;
- }
- 
- nested_iterator.next = node.next;
- prev_node = nested_iterator;
- node = nested_iterator;
- }
- 
- while (node.next != null)
- {
- prev_node = node;
- node = node.next;
- 
- if (node.content instanceof Sequence)
- {
- Sequence nested_iterator = new Sequence();
- prev_node.next = (Sequence)node.content;
- 
- if (node.content != null)
- nested_iterator = (Sequence)node.content;
- 
- while (nested_iterator.next != null)
- {
- nested_iterator = nested_iterator.next;
- }
- 
- nested_iterator.next = node.next;
- node = nested_iterator;
- }
- }
- }
- 
- // copy it over to a new Sequence object
- Sequence new_sequence = new Sequence();
- node = head;
- while (node.next != null)
- {
- 
- new_sequence.add(node.content, counter);
- counter++;
- 
- node = node.next;
- }
- 
- return new_sequence;
- }
- */
+
+
+
+
+
+
 
 
 
