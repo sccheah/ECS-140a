@@ -17,9 +17,9 @@ public class Sequence extends Element
     public int length()
     {
         int counter = 0;
-        
         Sequence temp_next = next;
         
+        // keep iterating until next is null and increase counter
         while (temp_next != null)
         {
             temp_next = temp_next.next;
@@ -29,37 +29,30 @@ public class Sequence extends Element
         return counter;
     }
     
-    // could be wrong iteration to pos and inputting elm0
     public void add(Element elm, int pos)
     {
+        // if not between 0 and length of Sequence object
         if (pos < 0 || pos > length())
         {
             System.err.println("Error: pos < 0 || pos > length()");
             System.exit(1);
         }
         
-        if (pos == 0)
-        {
-            Sequence new_node = new Sequence();
-            new_node.content = content;
-            new_node.next = next;
-            content = elm;
-            next = new_node;
-        
-            return;
-        }
-         
         Sequence node = this;
         
+        // iterate to the position we want to add Element at
         for (int i = 0; i < pos; i++)
         {
             if (node.next != null)
                 node = node.next;
         }
         
+        // copy over existing content into new node and set next to next node in sequence
         Sequence new_node = new Sequence();
         new_node.content = node.content;
         new_node.next = node.next;
+        
+        // copy element into existing node in pos, and point to new node
         node.content = elm;
         node.next = new_node;
             
@@ -67,33 +60,32 @@ public class Sequence extends Element
     
     public void delete(int pos)
     {
+        // if not between 0 and length of Sequence object
         if (pos < 0 || pos > length())
         {
             System.err.println("Error: pos < 0 || pos > length()");
             System.exit(1);
         }
         
-        if (pos == 0)
-        {
-            content = next.content;
-            next = next.next;
-            
-            return;
-        }
-        
         Sequence node = new Sequence();
-        node.next = next;
+        node = this;
     
+        // iterate to the position we want to delete
         for (int i = 0; i < pos; i++)
         {
             if (node.next != null)
                 node = node.next;
         }
         
+        // if there is a node two nodes ahead of position, copy one node ahead and change next ptr
         if (node.next.next != null)
         {
             node.content = node.next.content;
             node.next = node.next.next;
+        }
+        else
+        {
+            node = null;
         }
      }
     
@@ -101,10 +93,14 @@ public class Sequence extends Element
     {
         System.out.print("[ ");
         
+        // print first content in node
         if (content != null)
             content.Print();
         
+        // temp sequence to iterate squence
         Sequence temp_next = next;
+        
+        // iterate sequence and print content 
         while (temp_next != null)
         {
             if (temp_next.content != null)
@@ -115,6 +111,7 @@ public class Sequence extends Element
             
             temp_next = temp_next.next;
         }
+         
         System.out.print(" ]");
     }
 }
